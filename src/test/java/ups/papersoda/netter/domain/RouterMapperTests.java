@@ -109,10 +109,6 @@ public class RouterMapperTests {
 
     @Test
     public void gets_neighbours() {
-//        Map<Long, Router> routers = LongStream.range(1, 3 + 1).boxed()
-//                .collect(Collectors
-//                        .toMap((e) -> e, Router::new));
-
         Map<Long, Router> routers = Map.of(
                 1L, new Router(1L, Map.of()),
                 2L, new Router(2L, Map.of()),
@@ -152,11 +148,19 @@ public class RouterMapperTests {
 
         routerMapper.assignNeighbours.accept(routers, routerDTOs);
 
-        assertThat(routers.get(1L).getNeighbour(2L).getKey()).isEqualTo(routers.get(2L));
-        assertThat(routers.get(1L).getNeighbour(2L).getValue()).isEqualTo(new Connection(3, 2L, 1L));
+        assertThat(routers.get(1L)
+                .getNeighbour(2L).getKey())
+                    .isEqualTo(routers.get(2L));
+        assertThat(routers.get(1L)
+                .getNeighbour(2L).getValue())
+                    .isEqualTo(new Connection(3, 2L, 1L));
 
-        assertThat(routers.get(1L).getNeighbour(3L).getKey()).isEqualTo(routers.get(3L));
-        assertThat(routers.get(1L).getNeighbour(3L).getValue()).isEqualTo(new Connection(5, 3L, 1L));
+        assertThat(routers.get(1L)
+                .getNeighbour(3L).getKey())
+                    .isEqualTo(routers.get(3L));
+        assertThat(routers.get(1L)
+                .getNeighbour(3L).getValue())
+                    .isEqualTo(new Connection(5, 3L, 1L));
     }
 
     @Test
