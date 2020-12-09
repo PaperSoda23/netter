@@ -11,7 +11,7 @@ public class RoutingTable {
     /**
      * Map<RouterIDs, Map<AssociateRouterIDs, Pair<NextHopRouterId, CurrentShortestDistance>>>
      */
-    private final Map<Long, Map<Long, Pair<Long, Number>>> routingTable;
+    private Map<Long, Map<Long, Pair<Long, Number>>> routingTable;
 
 
     private RoutingTable(Map<Long, Map<Long, Pair<Long, Number>>> routingTable) {
@@ -48,25 +48,29 @@ public class RoutingTable {
         Set<Long> neighbours = this
                 .getNeighbourRoutes(currentRouter);
 
+
         Map<Long, Pair<Long, Number>> currentRouterRoutes = this
                 .getRouterRoutes(currentRouter);
 
-
         neighbours.forEach(neighbour -> {
-            final Number costToNeighbour = this
+            Number costToNeighbour = this
                     .getRouterDistance(currentRouter, neighbour);
 
             currentRouterRoutes
                     .forEach((associateRouterId, routerPair) -> {
-                        final Number currentShortestPath = routerPair.getValue().intValue();
-                        final Number possibleShortestPath = this
-                                .getRouterDistance(neighbour, associateRouterId).intValue() + costToNeighbour.intValue();
-
                         if (associateRouterId.equals(neighbour))
                             return;
 
-                        if (currentShortestPath.intValue() < possibleShortestPath.intValue())
+                        final Number currentShortestPath = routerPair.getValue().intValue();
+                        final Number possibleShortestPath = this
+                                .getRouterDistance(associateRouterId, neighbour).intValue() + costToNeighbour.intValue();
+
+                        if (
+                                RoutingTable.NO_CONNECTION == currentShortestPath.intValue() ||
+                                currentShortestPath.intValue() <= possibleShortestPath.intValue()
+                        ) {
                             return;
+                        }
 
                         tableWasUpdated
                                 .set(true);
@@ -84,6 +88,14 @@ public class RoutingTable {
         return tableWasUpdated.get();
     }
 
+    public Long getNextShortestPathRouter(final long from, final long to) {
+        return routingTable.get(from).get(to).getKey();
+    }
+
+    public Number getCurrentShortestPathDistance(final long from, final long to) {
+        return routingTable.get(from).get(to).getValue();
+    }
+
     public Long getNextHop(final long currentRouter, final Packet packet) {
         return routingTable
                 .get(currentRouter)
@@ -95,12 +107,13 @@ public class RoutingTable {
         return routingTable.get(router);
     }
 
-    public Number getRouterDistance(final long routerId, final long associateRouter) {
-        return routingTable.get(routerId).get(associateRouter).getValue();
+    public Number getRouterDistance(final long fromRouter, final long toRouter) {
+        return routingTable.get(fromRouter).get(toRouter).getValue();
     }
 
     public void setNewShortestPath(long currentRouter, long neighbour, long associateRouterId, Number newShortestPath) {
-        routingTable.get(currentRouter).replace(neighbour, Pair.of(associateRouterId, newShortestPath));
+        routingTable.get(currentRouter).replace(associateRouterId, Pair.of(neighbour, newShortestPath));
+        routingTable.get(associateRouterId).replace(currentRouter, Pair.of(neighbour, newShortestPath));
     }
 
     public Set<Long> getNeighbourRoutes(long ofRouter) {
@@ -112,6 +125,10 @@ public class RoutingTable {
                 .get(routerId)
                 .get(neighbourId)
                 .getValue();
+    }
+
+    public Map<Long, Map<Long, Pair<Long, Number>>> getRoutingTable() {
+        return routingTable;
     }
 
     public void removeRouter(final long routerToRemove) {
@@ -137,7 +154,6 @@ public class RoutingTable {
     public Set<Long> getRouterIds() {
         return routingTable.keySet();
     }
-
     public Set<Long> getAssociateRouterMap(long routerId) {
         return routingTable.getOrDefault(routerId, new HashMap<>()).keySet();
     }
@@ -151,5 +167,18 @@ public class RoutingTable {
         return "RoutingTable{" +
                 "routingTable=" + routingTable +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RoutingTable that = (RoutingTable) o;
+        return Objects.equals(routingTable, that.routingTable);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(routingTable);
     }
 }
