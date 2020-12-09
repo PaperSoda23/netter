@@ -1,5 +1,6 @@
 package ups.papersoda.netter.domain;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -71,78 +72,175 @@ public class RoutingTableTests {
             assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 3L))
                     .isEqualTo(RoutingTable.NO_CONNECTION);
         }
+    }
 
-        @Nested
-        class Behavior {
-            @Test
-            public void neighbour_bonds_are_mutual() {
-                var routers = new HashMap<Long, Router>() {{
-                    put(1L, new Router(1L, new HashMap<>()));
-                    put(2L, new Router(2L, new HashMap<>()));
-                }};
-                routers.get(1L).addNeighbour(2L, routers.get(2L), new Connection(5, 2L, 1L));
+    @Nested
+    class Behavior {
+        @Test
+        public void neighbour_bonds_are_mutual() {
+            var routers = new HashMap<Long, Router>() {{
+                put(1L, new Router(1L, new HashMap<>()));
+                put(2L, new Router(2L, new HashMap<>()));
+            }};
+            routers.get(1L).addNeighbour(2L, routers.get(2L), new Connection(5, 2L, 1L));
 
-                var routingTable = RoutingTable.createRoutingTable(new ArrayList<>(routers.values()));
-                System.out.println(routingTable);
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
-                        .isEqualTo(5);
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 1L))
-                        .isEqualTo(5);
-            }
-
-            @Test
-            public void neighbour_bonds_are_mutually_updated() {
-                var routers = new HashMap<Long, Router>() {{
-                    put(1L, new Router(1L, new HashMap<>()));
-                    put(2L, new Router(2L, new HashMap<>()));
-                }};
-                routers.get(1L)
-                        .addNeighbour(2L, routers.get(2L), new Connection(5, 1L, 2L));
-
-                var routingTable = RoutingTable.createRoutingTable(new ArrayList<>(routers.values()));
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
-                        .isEqualTo(5);
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 1L))
-                        .isEqualTo(5);
-
-                routingTable.updateRouterBond(1L, 2L, 7);
-
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
-                        .isEqualTo(7);
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 1L))
-                        .isEqualTo(7);
-            }
-
-            @Test
-            public void removes_router_from_routing_table() {
-                var routers = new HashMap<Long, Router>() {{
-                    put(1L, new Router(1L, new HashMap<>()));
-                    put(2L, new Router(2L, new HashMap<>()));
-                }};
-                routers.get(1L).addNeighbour(2L, routers.get(2L), new Connection(5, 2L, 1L));
-
-                var routingTable = RoutingTable.createRoutingTable(new ArrayList<>(routers.values()));
-
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
-                        .isEqualTo(5);
-
-                routingTable.removeRouter(2L);
-
-                assertThat(routingTable.hasRouter(2L))
-                        .isFalse();
-                assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
-                        .isEqualTo(RoutingTable.NO_CONNECTION);
-            }
+            var routingTable = RoutingTable.createRoutingTable(new ArrayList<>(routers.values()));
+            System.out.println(routingTable);
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
+                    .isEqualTo(5);
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 1L))
+                    .isEqualTo(5);
         }
 
-        @Nested
-        class Errors {
-            @Test
-            public void errors_when_created_with_no_routers() {
-                assertThatThrownBy(() -> RoutingTable.createRoutingTable(new ArrayList<>()))
-                        .isExactlyInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("routing table: no routers provided");
-            }
+        @Test
+        public void neighbour_bonds_are_mutually_updated() {
+            var routers = new HashMap<Long, Router>() {{
+                put(1L, new Router(1L, new HashMap<>()));
+                put(2L, new Router(2L, new HashMap<>()));
+            }};
+            routers.get(1L)
+                    .addNeighbour(2L, routers.get(2L), new Connection(5, 1L, 2L));
+
+            var routingTable = RoutingTable.createRoutingTable(new ArrayList<>(routers.values()));
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
+                    .isEqualTo(5);
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 1L))
+                    .isEqualTo(5);
+
+            routingTable.updateRouterBond(1L, 2L, 7);
+
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
+                    .isEqualTo(7);
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 1L))
+                    .isEqualTo(7);
+        }
+
+        @Test
+        public void removes_router_from_routing_table() {
+            var routers = new HashMap<Long, Router>() {{
+                put(1L, new Router(1L, new HashMap<>()));
+                put(2L, new Router(2L, new HashMap<>()));
+            }};
+            routers.get(1L).addNeighbour(2L, routers.get(2L), new Connection(5, 2L, 1L));
+
+            var routingTable = RoutingTable.createRoutingTable(new ArrayList<>(routers.values()));
+
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
+                    .isEqualTo(5);
+
+            routingTable.removeRouter(2L);
+
+            assertThat(routingTable.hasRouter(2L))
+                    .isFalse();
+            assertThat(routingTable.getDistanceFromRouterToNeighbour(1L, 2L))
+                    .isEqualTo(RoutingTable.NO_CONNECTION);
+        }
+
+        @Test
+        public void tryUpdateTable_returns_true_when_table_should_be_updated() {
+            var routers = List.of(
+                    new Router(1L, new HashMap<>()),
+                    new Router(2L, new HashMap<>()),
+                    new Router(3L, new HashMap<>())
+            );
+            var connections_1L = new HashMap<Long, Pair<Router, Connection>>(){{
+                put(3L, Pair.of(routers.get(2), new Connection(10, 3L, 1L)));
+                put(2L, Pair.of(routers.get(1), new Connection(2, 2L, 1L)));
+            }};
+            var connections_2L = new HashMap<Long, Pair<Router, Connection>>(){{
+                put(3L, Pair.of(routers.get(2), new Connection(3, 3L, 2L)));
+            }};
+
+            routers.get(0).setNeighbours(connections_1L);
+            routers.get(1).setNeighbours(connections_2L);
+
+            var routingTable = RoutingTable.createRoutingTable(routers);
+
+
+            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0).id());
+
+            assertThat(shouldUpdate).isTrue();
+        }
+
+        @Test
+        public void tryUpdateTable_performs_mutual_update_when_update_should_be_performed() {
+            var routers = List.of(
+                    new Router(1L, new HashMap<>()),
+                    new Router(2L, new HashMap<>()),
+                    new Router(3L, new HashMap<>())
+            );
+            var connections_1L = new HashMap<Long, Pair<Router, Connection>>(){{
+                put(3L, Pair.of(routers.get(2), new Connection(10, 3L, 1L)));
+                put(2L, Pair.of(routers.get(1), new Connection(2, 2L, 1L)));
+            }};
+            var connections_2L = new HashMap<Long, Pair<Router, Connection>>(){{
+                put(3L, Pair.of(routers.get(2), new Connection(3, 3L, 2L)));
+            }};
+
+            routers.get(0).setNeighbours(connections_1L);
+            routers.get(1).setNeighbours(connections_2L);
+
+            var routingTable = RoutingTable.createRoutingTable(routers);
+
+
+            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0).id());
+
+            assertThat(shouldUpdate).isTrue();
+            assertThat(routingTable.getNextShortestPathRouter(1L, 3L)).isEqualTo(2L);
+            assertThat(routingTable.getCurrentShortestPathDistance(1L, 3L)).isEqualTo(5);
+        }
+
+        @Test
+        public void tryUpdateTable_does_not_change_routing_table_when_update_should_not_be_performed() {
+            var routers = List.of(
+                    new Router(1L, new HashMap<>()),
+                    new Router(2L, new HashMap<>()),
+                    new Router(3L, new HashMap<>())
+            );
+            var connections_1L = new HashMap<Long, Pair<Router, Connection>>(){{
+                put(3L, Pair.of(routers.get(2), new Connection(1, 3L, 1L)));
+                put(2L, Pair.of(routers.get(1), new Connection(2, 2L, 1L)));
+            }};
+            var connections_2L = new HashMap<Long, Pair<Router, Connection>>(){{
+                put(3L, Pair.of(routers.get(2), new Connection(3, 3L, 2L)));
+            }};
+
+            routers.get(0).setNeighbours(connections_1L);
+            routers.get(1).setNeighbours(connections_2L);
+
+            var routingTable = RoutingTable.createRoutingTable(routers);
+
+
+            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0).id());
+
+
+            assertThat(shouldUpdate)
+                    .isFalse();
+            assertThat(routingTable.getRoutingTable())
+                    .isEqualTo(Map.of(
+                    1L, Map.of(
+                                2L, Pair.of(2L, 2),
+                                3L, Pair.of(3L, 1)
+                        ),
+                    2L, Map.of(
+                            1L, Pair.of(1L, 2),
+                            3L, Pair.of(3L, 3)
+                        ),
+                    3L, Map.of(
+                                1L, Pair.of(1L, 1),
+                                2L, Pair.of(2L, 3)
+                        )
+                    ));
+        }
+    }
+
+    @Nested
+    class Errors {
+        @Test
+        public void errors_when_created_with_no_routers() {
+            assertThatThrownBy(() -> RoutingTable.createRoutingTable(new ArrayList<>()))
+                    .isExactlyInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("routing table: no routers provided");
         }
     }
 }
