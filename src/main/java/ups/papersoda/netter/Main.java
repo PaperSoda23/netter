@@ -1,7 +1,5 @@
 package ups.papersoda.netter;
 
-import org.apache.commons.lang3.tuple.Pair;
-import ups.papersoda.netter.domain.Connection;
 import ups.papersoda.netter.domain.Network;
 import ups.papersoda.netter.domain.Packet;
 import ups.papersoda.netter.domain.mapper.RouterMapper;
@@ -13,24 +11,23 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-//        List<RouterDTO> routers = new ArrayList<>(){{
-//            new RouterDTO(1L, new ArrayList<>() {{
-//                new ConnectionDTO(1L, 5, 2L);
-//            }});
-//            new RouterDTO(2L, new ArrayList<>() {{
-//                new ConnectionDTO(2L, 3, 3L);
-//            }});
-//            new RouterDTO(3L, new ArrayList<>());
-//        }};
-        List<? extends RouterDTO> routers = new ArrayList<>();
+        List<RouterDTO> routers = new ArrayList<>(){{
+            add(new RouterDTO(1L, new ArrayList<>() {{
+                add(new ConnectionDTO(1L, 7, 1L, 2L));
+            }}));
+            add(new RouterDTO(2L, new ArrayList<>() {{
+                add(new ConnectionDTO(2L, 5, 2L, 3L));
+            }}));
+            add(new RouterDTO(3L, new ArrayList<>()));
+        }};
 
         Network network = new Network(new RouterMapper(), routers);
 
-
         List<Packet> packets = new ArrayList<>(){{
-            new Packet(1L, 1L, 3L);
+            add(new Packet(1L, 1L, 3L));
         }};
 
         network.beingPacketTransmission(packets);
+        System.out.println(packets.get(0));
     }
 }
