@@ -44,6 +44,7 @@ public class Packet {
         path.add(router);
     }
 
+
     @Override
     public String toString() {
         return "Packet{" +

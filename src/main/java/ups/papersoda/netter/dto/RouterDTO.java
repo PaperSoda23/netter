@@ -18,6 +18,7 @@ public class RouterDTO {
     }
     public List<ConnectionDTO> getConnections() { return this.connections; }
 
+
     @Override
     public String toString() {
         return "RouterDTO{" +

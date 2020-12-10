@@ -4,8 +4,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class RoutingTable {
@@ -32,7 +30,8 @@ public class RoutingTable {
                     routers
                         .stream()
                         .filter(everyRouter -> currentRouter.id() != everyRouter.id())
-                        .collect(Collectors.toMap(
+                        .collect(Collectors
+                                .toMap(
                                         Router::id,
                                         (someOtherRouter) -> Pair.of(
                                                 someOtherRouter.id(),
@@ -64,7 +63,7 @@ public class RoutingTable {
 
                         final Number currentShortestPath = routerPair.getValue().intValue();
 
-                        Number possibleShortestPath = this
+                        final Number possibleShortestPath = this
                                 .getRouterDistance(associateRouterId, neighbour).intValue() + costToNeighbour.intValue();
 
                         if (
@@ -105,9 +104,9 @@ public class RoutingTable {
     }
 
     public Long getNextHop(final Router currentRouter, final Packet packet) {
-        var neighbourIds= currentRouter.getNeighbours();
-        AtomicInteger currentMin = new AtomicInteger(Integer.MAX_VALUE);
-        AtomicLong nextHop = new AtomicLong(0L);
+        final var neighbourIds= currentRouter.getNeighbours();
+        int currentMin = Integer.MAX_VALUE;
+        long nextHop = 0L;
 
         for (var neighbourId : neighbourIds) {
             var currentMinRoute = routingTable
@@ -116,20 +115,20 @@ public class RoutingTable {
                             .getDestId());
 
             if (currentMinRoute == null) {
-                nextHop.set(packet.getDestId());
+                nextHop = packet.getDestId();
                 break;
             }
 
             if (
-                    currentMinRoute.getValue().intValue() > currentMin.get() ||
+                    currentMinRoute.getValue().intValue() > currentMin ||
                     currentMinRoute.getValue().intValue() == RoutingTable.NO_CONNECTION
             ) continue;
 
-            currentMin.set(currentMinRoute.getValue().intValue());
-            nextHop.set(neighbourId);
+            currentMin = currentMinRoute.getValue().intValue();
+            nextHop = neighbourId;
         }
 
-        return nextHop.get();
+        return nextHop;
     }
 
     public Map<Long, Pair<Long, Number>> getRouterRoutes(final long router) {
@@ -168,11 +167,11 @@ public class RoutingTable {
     public void updateRouterBond(final long router, final long neighbour, final int newDistance) {
         routingTable
                 .get(router)
-                .replace(neighbour, Pair
+                    .replace(neighbour, Pair
                         .of(neighbour, newDistance));
         routingTable
                 .get(neighbour)
-                .replace(router, Pair
+                    .replace(router, Pair
                         .of(router, newDistance));
     }
 
@@ -187,13 +186,13 @@ public class RoutingTable {
         return routingTable.containsKey(router);
     }
 
+
     @Override
     public String toString() {
         return "RoutingTable{" +
                 "routingTable=" + routingTable +
                 '}';
     }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -201,7 +200,6 @@ public class RoutingTable {
         RoutingTable that = (RoutingTable) o;
         return Objects.equals(routingTable, that.routingTable);
     }
-
     @Override
     public int hashCode() {
         return Objects.hash(routingTable);

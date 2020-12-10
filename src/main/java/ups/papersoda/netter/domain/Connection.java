@@ -43,18 +43,17 @@ public class Connection {
                 ", fromRouter=" + fromRouter +
                 '}';
     }
-
     @Override
     public int hashCode() {
         return (int)id;
     }
-
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Connection))
             return false;
 
         Connection conn = (Connection)obj;
+
         return (
                 conn.toRouter == toRouter &&
                 conn.fromRouter == fromRouter &&

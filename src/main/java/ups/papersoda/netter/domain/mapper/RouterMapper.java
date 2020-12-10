@@ -35,19 +35,17 @@ public class RouterMapper implements RouterMapperInt {
         return routerDTO.get();
     };
 
-    public final BiConsumer<Map<Long, Router>, Collection<? extends RouterDTO>> assignNeighbours = (routers, routerDTOs) -> {
-        routers.values()
-                .forEach(router -> {
-                    RouterDTO associateDTO = getAssociateRouterDTO.apply(router, routerDTOs);
-                    Set<Long> neighbourIds = getNeighboursIds(associateDTO);
-                    Map<Long, Pair<Router, Connection>> neighbours= getNeighbours(
-                            associateDTO,
-                            routers.values(),
-                            neighbourIds
-                    );
-                    router.setNeighbours(neighbours);
-                });
-    };
+    public final BiConsumer<Map<Long, Router>, Collection<? extends RouterDTO>> assignNeighbours = (routers, routerDTOs) -> routers.values()
+            .forEach(router -> {
+                var associatedRouterDTO = getAssociateRouterDTO.apply(router, routerDTOs);
+                var neighbourIds = getNeighboursIds(associatedRouterDTO);
+                Map<Long, Pair<Router, Connection>> neighbours = getNeighbours(
+                        associatedRouterDTO,
+                        routers.values(),
+                        neighbourIds
+                );
+                router.setNeighbours(neighbours);
+            });
 
     public Set<Long> getNeighboursIds(final RouterDTO routerDTO) {
         return routerDTO
@@ -68,7 +66,10 @@ public class RouterMapper implements RouterMapperInt {
                 .collect(Collectors
                         .toMap(
                                 Router::id,
-                                (neighbour) -> Pair.of(neighbour, createConnection(routerDTO, neighbour.id()))
+                                (neighbour) -> Pair.of(
+                                        neighbour,
+                                        createConnection(routerDTO, neighbour.id())
+                                )
                         )
                 );
     }

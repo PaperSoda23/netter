@@ -63,6 +63,7 @@ public class Router implements IRouter {
 
     }
 
+
     private final Predicate<Packet> isDestinationRouter = p -> id == p.getDestId();
     public Pair<Router, Connection> getNeighbour(long neighbour) {
         return neighbours.get(neighbour);
@@ -84,9 +85,6 @@ public class Router implements IRouter {
                     .collect(Collectors.toSet());
     }
 
-    public Map<Long, Pair<Router, Connection>> getNeighbourRouters() {
-        return neighbours;
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -99,7 +97,6 @@ public class Router implements IRouter {
     public int hashCode() {
         return (int)id;
     }
-
     @Override
     public String toString() {
         return "Router{" +

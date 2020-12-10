@@ -37,6 +37,7 @@ public class ConnectionDTO {
         this.toRouter = to;
     }
 
+
     @Override
     public String toString() {
         return "connection=id" + id + "from" + fromRouter + "to" + toRouter + "weight" + weight;
