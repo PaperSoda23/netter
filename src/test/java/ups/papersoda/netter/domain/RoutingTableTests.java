@@ -3,6 +3,9 @@ package ups.papersoda.netter.domain;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ups.papersoda.netter.domain.mapper.RouterMapper;
+import ups.papersoda.netter.dto.ConnectionDTO;
+import ups.papersoda.netter.dto.RouterDTO;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -71,6 +74,46 @@ public class RoutingTableTests {
                     .isEqualTo(2);
             assertThat(routingTable.getDistanceFromRouterToNeighbour(2L, 3L))
                     .isEqualTo(RoutingTable.NO_CONNECTION);
+        }
+    }
+
+    @Nested
+    class Integration {
+        @Test
+        public void sets_new_shortest_path_mutually() {
+            List<RouterDTO> routerDTOs = new ArrayList<>(){{
+                add(new RouterDTO(1L, new ArrayList<>() {{ add(new ConnectionDTO(1L, 7, 1L, 2L)); }}));
+                add(new RouterDTO(2L, new ArrayList<>() {{ add(new ConnectionDTO(2L, 5, 2L, 3L)); }}));
+                add(new RouterDTO(3L, new ArrayList<>()));
+            }};
+            var routers = new RouterMapper().transformToRouters(routerDTOs);
+            var routingTable = RoutingTable.createRoutingTable(routers.values());
+
+            routingTable.setNewShortestPath(1L, 2L, 3L, 12);
+
+            assertThat(routingTable.getCurrentShortestPathDistance(1, 3).intValue()).isEqualTo(12);
+            assertThat(routingTable.getNextShortestPathRouter(1, 3).longValue()).isEqualTo(2L);
+            assertThat(routingTable.getCurrentShortestPathDistance(3, 1).intValue()).isEqualTo(12);
+            assertThat(routingTable.getNextShortestPathRouter(3, 1).longValue()).isEqualTo(2L);
+        }
+
+        @Test
+        public void gets_next_router_hop() {
+            List<RouterDTO> routerDTOs = new ArrayList<>(){{
+                add(new RouterDTO(1L, new ArrayList<>() {{ add(new ConnectionDTO(1L, 7, 1L, 2L)); }}));
+                add(new RouterDTO(2L, new ArrayList<>() {{ add(new ConnectionDTO(2L, 5, 2L, 3L)); }}));
+                add(new RouterDTO(3L, new ArrayList<>()));
+            }};
+            var packet = new Packet(1, 1L, 3L);
+
+            var routers = new RouterMapper().transformToRouters(routerDTOs);
+            var routingTable = RoutingTable.createRoutingTable(routers.values());
+            System.out.println(routingTable);
+
+            System.out.println(routingTable);
+            var nextHop = routingTable.getNextHop(routers.get(1L), packet);
+
+            assertThat(nextHop).isEqualTo(2L);
         }
     }
 
@@ -157,7 +200,7 @@ public class RoutingTableTests {
             var routingTable = RoutingTable.createRoutingTable(routers);
 
 
-            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0).id());
+            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0));
 
             assertThat(shouldUpdate).isTrue();
         }
@@ -183,7 +226,7 @@ public class RoutingTableTests {
             var routingTable = RoutingTable.createRoutingTable(routers);
 
 
-            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0).id());
+            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0));
 
             assertThat(shouldUpdate).isTrue();
             assertThat(routingTable.getNextShortestPathRouter(1L, 3L)).isEqualTo(2L);
@@ -211,7 +254,7 @@ public class RoutingTableTests {
             var routingTable = RoutingTable.createRoutingTable(routers);
 
 
-            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0).id());
+            boolean shouldUpdate = routingTable.tryUpdateTable(routers.get(0));
 
 
             assertThat(shouldUpdate)

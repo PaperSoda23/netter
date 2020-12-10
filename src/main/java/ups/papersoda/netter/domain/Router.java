@@ -3,7 +3,9 @@ package ups.papersoda.netter.domain;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class Router implements IRouter {
     private long id;
@@ -18,9 +20,9 @@ public class Router implements IRouter {
 
 
     private void shareTableUpdateWithNeighbours() {
-        neighbours
-                .forEach((neighbour, connection) -> routingTable
-                        .tryUpdateTable(neighbour));
+        neighbours.values()
+                .forEach((neighbour) -> routingTable
+                        .tryUpdateTable(neighbour.getKey()));
     }
 
     public void addNeighbour(final long neighbourId, final Router router, final Connection connection) {
@@ -52,16 +54,16 @@ public class Router implements IRouter {
             return;
         }
 
-        final boolean tableWasUpdated = routingTable.tryUpdateTable(this.id);
+        final boolean tableWasUpdated = routingTable.tryUpdateTable(this);
         if (tableWasUpdated)
             this.shareTableUpdateWithNeighbours();
 
-        final var nextNeighborToSend = routingTable.getNextHop(this.id, packet);
+        final var nextNeighborToSend = routingTable.getNextHop(this, packet);
         this.sendPacket(nextNeighborToSend, packet);
 
     }
 
-    private final Predicate<Packet> isDestinationRouter = p -> this.id == p.getDestId();
+    private final Predicate<Packet> isDestinationRouter = p -> id == p.getDestId();
     public Pair<Router, Connection> getNeighbour(long neighbour) {
         return neighbours.get(neighbour);
     }
@@ -76,6 +78,15 @@ public class Router implements IRouter {
         return neighbours.containsKey(router.id);
     }
     public long id() { return id; }
+    public Set<Long> getNeighbours() {
+        return neighbours.values().stream()
+                .map(neighbour -> neighbour.getKey().id)
+                    .collect(Collectors.toSet());
+    }
+
+    public Map<Long, Pair<Router, Connection>> getNeighbourRouters() {
+        return neighbours;
+    }
 
     @Override
     public boolean equals(Object obj) {

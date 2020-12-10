@@ -4,6 +4,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class RoutingTable {
@@ -11,7 +13,7 @@ public class RoutingTable {
     /**
      * Map<RouterIDs, Map<AssociateRouterIDs, Pair<NextHopRouterId, CurrentShortestDistance>>>
      */
-    private Map<Long, Map<Long, Pair<Long, Number>>> routingTable;
+    private final Map<Long, Map<Long, Pair<Long, Number>>> routingTable;
 
 
     private RoutingTable(Map<Long, Map<Long, Pair<Long, Number>>> routingTable) {
@@ -42,19 +44,18 @@ public class RoutingTable {
         return new RoutingTable(routingTable);
     }
 
-    public boolean tryUpdateTable(final long currentRouter) {
-        AtomicBoolean tableWasUpdated = new AtomicBoolean(false);
+    public boolean tryUpdateTable(final Router currentRouter) {
+        final AtomicBoolean tableWasUpdated = new AtomicBoolean(false);
 
-        Set<Long> neighbours = this
-                .getNeighbourRoutes(currentRouter);
+        final Set<Long> neighbours = currentRouter
+                .getNeighbours();
 
-
-        Map<Long, Pair<Long, Number>> currentRouterRoutes = this
-                .getRouterRoutes(currentRouter);
+        final Map<Long, Pair<Long, Number>> currentRouterRoutes = this
+                .getRouterRoutes(currentRouter.id());
 
         neighbours.forEach(neighbour -> {
             Number costToNeighbour = this
-                    .getRouterDistance(currentRouter, neighbour);
+                    .getRouterDistance(currentRouter.id(), neighbour);
 
             currentRouterRoutes
                     .forEach((associateRouterId, routerPair) -> {
@@ -62,22 +63,29 @@ public class RoutingTable {
                             return;
 
                         final Number currentShortestPath = routerPair.getValue().intValue();
-                        final Number possibleShortestPath = this
+
+                        Number possibleShortestPath = this
                                 .getRouterDistance(associateRouterId, neighbour).intValue() + costToNeighbour.intValue();
 
                         if (
-                                RoutingTable.NO_CONNECTION == currentShortestPath.intValue() ||
+                                currentShortestPath.intValue() != RoutingTable.NO_CONNECTION &&
                                 currentShortestPath.intValue() <= possibleShortestPath.intValue()
-                        ) {
+                        )
                             return;
-                        }
+
+                        if (RoutingTable.NO_CONNECTION == possibleShortestPath.intValue())
+                            try {
+                                throw new Exception("tryUpdateTable: possible path no connection");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
 
                         tableWasUpdated
                                 .set(true);
 
                         this
                                 .setNewShortestPath(
-                                        currentRouter,
+                                        currentRouter.id(),
                                         neighbour,
                                         associateRouterId,
                                         possibleShortestPath
@@ -96,11 +104,32 @@ public class RoutingTable {
         return routingTable.get(from).get(to).getValue();
     }
 
-    public Long getNextHop(final long currentRouter, final Packet packet) {
-        return routingTable
-                .get(currentRouter)
-                .get(packet.getDestId())
-                .getKey();
+    public Long getNextHop(final Router currentRouter, final Packet packet) {
+        var neighbourIds= currentRouter.getNeighbours();
+        AtomicInteger currentMin = new AtomicInteger(Integer.MAX_VALUE);
+        AtomicLong nextHop = new AtomicLong(0L);
+
+        for (var neighbourId : neighbourIds) {
+            var currentMinRoute = routingTable
+                    .get(neighbourId)
+                    .get(packet
+                            .getDestId());
+
+            if (currentMinRoute == null) {
+                nextHop.set(packet.getDestId());
+                break;
+            }
+
+            if (
+                    currentMinRoute.getValue().intValue() > currentMin.get() ||
+                    currentMinRoute.getValue().intValue() == RoutingTable.NO_CONNECTION
+            ) continue;
+
+            currentMin.set(currentMinRoute.getValue().intValue());
+            nextHop.set(neighbourId);
+        }
+
+        return nextHop.get();
     }
 
     public Map<Long, Pair<Long, Number>> getRouterRoutes(final long router) {
@@ -114,10 +143,6 @@ public class RoutingTable {
     public void setNewShortestPath(long currentRouter, long neighbour, long associateRouterId, Number newShortestPath) {
         routingTable.get(currentRouter).replace(associateRouterId, Pair.of(neighbour, newShortestPath));
         routingTable.get(associateRouterId).replace(currentRouter, Pair.of(neighbour, newShortestPath));
-    }
-
-    public Set<Long> getNeighbourRoutes(long ofRouter) {
-        return routingTable.get(ofRouter).keySet();
     }
 
     public Number getDistanceFromRouterToNeighbour(final long routerId, final long neighbourId) {
